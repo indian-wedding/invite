@@ -1209,7 +1209,8 @@
     };
 
     // For Google Sheets integration, send to your Apps Script endpoint:
-    // fetch('YOUR_GOOGLE_APPS_SCRIPT_URL', { method:'POST', body: JSON.stringify(data) })
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbyxG0OHjIinfh4F0_ZTbFGODZhs4zqOjsnE8T7Mz8WrmCLNNnb3DyfqwONWH9A1mBq9/exec"; 
+    fetch(webAppUrl, { method:'POST', body: JSON.stringify(data) })
 
     console.log('RSVP Data:', data);
 
