@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gaurav & Akansha Wedding | 19 June 2026</title>
 <meta name="description" content="To our friends and family: We're so excited to celebrate our wedding with you. Find all the details you need to know about our big day here.">
-<meta property="og:image" content="https://raw.githubusercontent.com/gaurav-akansha/invite/2e1e52c70fe4260986cae34d4fb05fe3cdf5b50d/preview-image.png" />
-<meta property="og:image:secure_url" content="https://raw.githubusercontent.com/gaurav-akansha/invite/2e1e52c70fe4260986cae34d4fb05fe3cdf5b50d/preview-image.png" />
+<meta property="og:image" content="https://raw.githubusercontent.com/gaurav-akansha/invite/refs/heads/main/wedding-invite-preview.png" />
+<meta property="og:image:secure_url" content="https://raw.githubusercontent.com/gaurav-akansha/invite/refs/heads/main/wedding-invite-preview.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -270,7 +270,7 @@ body { font-family: 'Jost', sans-serif; background: var(--ivory); color: var(--d
 .opening-aura {
   position: absolute; inset: -22px; border-radius: 50%;
   background: radial-gradient(ellipse, rgba(201,168,76,0.28) 0%, transparent 70%);
-  animation: auraBreath 2s ease-in-out infinite 2s, auraReveal 0.8s ease 2s both;
+  animation: auraBreath 2.8s ease-in-out infinite 2.5s, auraReveal 0.8s ease 2s both;
 }
 @keyframes auraReveal { from{opacity:0} to{opacity:1} }
 @keyframes auraBreath {
@@ -2000,7 +2000,7 @@ footer { background: var(--dark); color: white; text-align: center; padding: 70p
 <audio id="bgMusic" loop><source src="ganesh-vandan.mp3" type="audio/mpeg"></audio>
 <!-- Opening animation music — plays only during opening screen, fades out on dismiss -->
 
-<audio id="openingMusic"><source src="opening-music.mp3" type="audio/mpeg"></audio>
+<audio id="openingMusic" loop><source src="opening-music.mp3" type="audio/mpeg"></audio>
 
 
 <!-- ════ NAV ════ -->
@@ -2733,7 +2733,7 @@ footer { background: var(--dark); color: white; text-align: center; padding: 70p
   }
 
   scr.addEventListener('click', dismiss);
-  setTimeout(dismiss, 6000);
+  setTimeout(dismiss, 6800);
 })();
 
 /* Grand cinematic particle system — gold dust + energy sparks + rising embers */
