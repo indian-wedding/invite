@@ -1997,10 +1997,9 @@ footer { background: var(--dark); color: white; text-align: center; padding: 70p
 </div>
 
 
-<audio id="bgMusic" loop><source src="ganesh-vandan.mp3" type="audio/mpeg"></audio>
+<audio id="bgMusic" loop preload="auto" playsinline><source src="ganesh-vandan.mp3" type="audio/mpeg"></audio>
 <!-- Opening animation music — plays only during opening screen, fades out on dismiss -->
-
-<audio id="openingMusic"><source src="opening-music.mp3" type="audio/mpeg"></audio>
+<audio id="openingMusic" preload="auto" playsinline><source src="opening-music.mp3" type="audio/mpeg"></audio>
 
 
 <!-- ════ NAV ════ -->
@@ -2681,30 +2680,175 @@ footer { background: var(--dark); color: white; text-align: center; padding: 70p
     // Older browsers / no FontFaceSet API — show immediately
     showOm();
   }
-  /* ── Auto-play opening music ──
-     Browsers require a user gesture for audio; we try immediately and
-     also queue a one-shot click listener as fallback so music starts
-     the moment the user first interacts (before dismiss).           */
+  /* ══════════════════════════════════════════════════════════════════
+     ROBUST AUTOPLAY STRATEGY — 3-tier approach
+     ─────────────────────────────────────────────────────────────────
+     Tier 1: Silent autoplay attempt on load (succeeds when browser's
+             autoplay policy allows it — returning visitors, desktop).
+     Tier 2: First pointer/touch event anywhere triggers music with a
+             smooth fade-in (catches mobile & strict Chrome policies).
+     Tier 3: If music hasn't started within 800 ms, a premium "Tap to
+             Enter" overlay appears. The overlay itself IS the gesture,
+             so clicking it always succeeds in unlocking audio.
+  ══════════════════════════════════════════════════════════════════ */
+
   let musicStarted = false;
+
+  /* ── Fade-in helper ── */
+  function fadeInAudio(audio, targetVol) {
+    audio.volume = 0;
+    let vol = 0;
+    const fadeIn = setInterval(() => {
+      vol = Math.min(vol + 0.04, targetVol);
+      audio.volume = vol;
+      if (vol >= targetVol) clearInterval(fadeIn);
+    }, 72);
+  }
+
+  /* ── Core play function ── */
   function startOpeningMusic() {
     if (musicStarted) return;
     musicStarted = true;
+    hideTapOverlay();
     openingAudio.volume = 0;
-    openingAudio.play().then(() => {
-      // Gentle fade-in over 1.8 s
-      let vol = 0;
-      const fadeIn = setInterval(() => {
-        vol = Math.min(vol + 0.04, 0.72);
-        openingAudio.volume = vol;
-        if (vol >= 0.72) clearInterval(fadeIn);
-      }, 72);
-    }).catch(() => { musicStarted = false; }); // reset so next gesture retries
+    openingAudio.play()
+      .then(() => { fadeInAudio(openingAudio, 0.72); })
+      .catch(() => {
+        musicStarted = false; // reset so next gesture retries
+        showTapOverlay();     // surface the overlay as a guaranteed unlock
+      });
   }
 
-  // Try immediately (works if page was already interacted with)
+  /* ── Tap-to-Enter overlay ── */
+  var tapOverlay = null;
+  var overlayShown = false;
+
+  function showTapOverlay() {
+    if (overlayShown) return;
+    overlayShown = true;
+
+    tapOverlay = document.createElement('div');
+    tapOverlay.id = 'tap-enter-overlay';
+    tapOverlay.innerHTML = [
+      '<div class="teo-inner">',
+      '  <div class="teo-om">ॐ</div>',
+      '  <div class="teo-title">Gaurav <span>&amp;</span> Akansha</div>',
+      '  <div class="teo-pulse-ring"></div>',
+      '  <div class="teo-pulse-ring teo-ring2"></div>',
+      '  <button class="teo-btn" aria-label="Tap to enter and play music">',
+      '    <span class="teo-btn-icon">🎵</span>',
+      '    <span class="teo-btn-text">Tap to Enter</span>',
+      '  </button>',
+      '  <p class="teo-hint">with music &amp; blessings</p>',
+      '</div>'
+    ].join('');
+
+    /* Styles injected inline so no external CSS file is needed */
+    var style = document.createElement('style');
+    style.textContent = [
+      '#tap-enter-overlay{',
+      '  position:fixed;inset:0;z-index:999999;',
+      '  background:radial-gradient(ellipse at 50% 42%,#1a0e00 0%,#0a0600 50%,#000 100%);',
+      '  display:flex;align-items:center;justify-content:center;',
+      '  cursor:pointer;',
+      '  animation:teoFadeIn 0.6s ease both;',
+      '}',
+      '@keyframes teoFadeIn{from{opacity:0}to{opacity:1}}',
+      '.teo-inner{text-align:center;position:relative;padding:40px 24px;}',
+      '.teo-om{',
+      '  font-family:"Noto Serif Devanagari",serif;',
+      '  font-size:clamp(3.5rem,12vw,6rem);',
+      '  color:#c9a84c;',
+      '  text-shadow:0 0 40px rgba(201,168,76,0.8),0 0 80px rgba(201,168,76,0.4);',
+      '  animation:teoOmBreath 2.4s ease-in-out infinite;',
+      '  display:block;margin-bottom:0.6rem;',
+      '}',
+      '@keyframes teoOmBreath{',
+      '  0%,100%{transform:scale(1);filter:brightness(1);}',
+      '  50%{transform:scale(1.06);filter:brightness(1.3);}',
+      '}',
+      '.teo-title{',
+      '  font-family:"Cormorant Garamond",serif;',
+      '  font-size:clamp(1.4rem,5vw,2.2rem);font-weight:300;',
+      '  color:rgba(250,246,239,0.9);letter-spacing:0.14em;',
+      '  margin-bottom:2.4rem;',
+      '}',
+      '.teo-title span{color:#c9a84c;font-style:italic;}',
+      '.teo-pulse-ring{',
+      '  position:absolute;top:50%;left:50%;',
+      '  width:160px;height:160px;margin:-80px 0 0 -80px;',
+      '  border-radius:50%;',
+      '  border:1.5px solid rgba(201,168,76,0.5);',
+      '  animation:teoPulse 2s ease-out infinite;',
+      '  pointer-events:none;',
+      '}',
+      '.teo-ring2{animation-delay:1s;border-color:rgba(232,180,184,0.35);}',
+      '@keyframes teoPulse{',
+      '  0%{transform:scale(0.8);opacity:0.8;}',
+      '  100%{transform:scale(2.2);opacity:0;}',
+      '}',
+      '.teo-btn{',
+      '  display:inline-flex;align-items:center;gap:0.55rem;',
+      '  background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05));',
+      '  border:1.5px solid rgba(201,168,76,0.65);',
+      '  color:#e8d5a3;',
+      '  padding:0.85rem 2.2rem;border-radius:50px;',
+      '  font-family:"Jost",sans-serif;font-size:0.88rem;',
+      '  letter-spacing:0.22em;text-transform:uppercase;',
+      '  cursor:pointer;',
+      '  transition:all 0.3s ease;',
+      '  backdrop-filter:blur(8px);',
+      '  margin-bottom:1rem;',
+      '  animation:teoBtnGlow 2s ease-in-out infinite;',
+      '}',
+      '.teo-btn:hover,.teo-btn:active{',
+      '  background:rgba(201,168,76,0.25);',
+      '  box-shadow:0 0 28px rgba(201,168,76,0.45);',
+      '  transform:scale(1.04);',
+      '}',
+      '@keyframes teoBtnGlow{',
+      '  0%,100%{box-shadow:0 0 12px rgba(201,168,76,0.2);}',
+      '  50%{box-shadow:0 0 28px rgba(201,168,76,0.55);}',
+      '}',
+      '.teo-btn-icon{font-size:1.1rem;}',
+      '.teo-hint{',
+      '  color:rgba(201,168,76,0.38);',
+      '  font-family:"Jost",sans-serif;font-size:0.66rem;',
+      '  letter-spacing:0.2em;text-transform:uppercase;',
+      '}'
+    ].join('\n');
+
+    document.head.appendChild(style);
+    document.body.appendChild(tapOverlay);
+
+    /* Clicking the overlay (anywhere on it) starts music + hides overlay */
+    tapOverlay.addEventListener('click', function onTap() {
+      tapOverlay.removeEventListener('click', onTap);
+      startOpeningMusic();
+    }, { once: true });
+  }
+
+  function hideTapOverlay() {
+    if (!tapOverlay) return;
+    tapOverlay.style.transition = 'opacity 0.5s ease';
+    tapOverlay.style.opacity = '0';
+    setTimeout(function() {
+      if (tapOverlay && tapOverlay.parentNode) tapOverlay.parentNode.removeChild(tapOverlay);
+      tapOverlay = null;
+    }, 520);
+  }
+
+  /* ── Tier 1: try immediately on page load ── */
   startOpeningMusic();
-  // Fallback: first touch / click anywhere starts it
+
+  /* ── Tier 2: any pointer event triggers music ── */
   document.addEventListener('pointerdown', startOpeningMusic, { once: true });
+  document.addEventListener('touchstart',  startOpeningMusic, { once: true, passive: true });
+
+  /* ── Tier 3: show tap overlay after 800 ms if music still hasn't started ── */
+  var overlayTimer = setTimeout(function() {
+    if (!musicStarted) showTapOverlay();
+  }, 800);
 
   /* ── Fade-out helper ── */
   function fadeOutOpeningMusic(duration) {
@@ -2724,7 +2868,9 @@ footer { background: var(--dark); color: white; text-align: center; padding: 70p
 
   /* ── Dismiss ── */
   function dismiss() {
-    fadeOutOpeningMusic(1100); // fade music over 1.1 s (matches CSS fade-out)
+    clearTimeout(overlayTimer); // cancel tap-overlay timer if not yet shown
+    hideTapOverlay();           // hide overlay if it was shown
+    fadeOutOpeningMusic(1100);  // fade music over 1.1 s (matches CSS fade-out)
     scr.classList.add('fade-out');
     scr.addEventListener('transitionend', () => {
       scr.remove();
